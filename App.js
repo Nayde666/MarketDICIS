@@ -19,6 +19,7 @@ import HomeScreen from './screen/HomeScreen';
 import OwnPublicationsScreen from './screen/OwnPublicationsScreen';
 import LoginScreen from './screen/LoginScreen';
 
+
 const Stack = createNativeStackNavigator();
 // App -------------------------------------------------------------------------------------------------------------
 export default function App() {

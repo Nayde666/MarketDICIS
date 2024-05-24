@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Text, StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Button, Alert, FlatList, KeyboardAvoidingView, Platform} from 'react-native';
-import { BlurView } from 'expo-blur';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { styles } from '../styles';
 import { Modal } from 'react-native';
-import { AntDesign, Ionicons } from '@expo/vector-icons';
-
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { AntDesign} from '@expo/vector-icons';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../firebase-config';
+import { firebase } from '../firebase-config';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, query, where, getDocs,  doc, getDoc, collection, addDoc, serverTimestamp, deleteDoc, updateDoc} from 'firebase/firestore';
 import db from '../firebase-config';
-
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -27,9 +27,11 @@ function HomeScreen({ route }) {
     const [description, setDescripcion] = useState('');
     const [category, setCategory] = useState('');
     const [availability, setAvailability] = useState('');
+
+    const [imageUri, setImageUri] = useState(null);
+    const [uploading, setUploading] = useState(false);
   
-    useEffect(() => {
-      const loadPublications = async () => {
+    const loadPublications = async () => {
         const db = getFirestore();
         const publicationsQuery = query(collection(db, 'Publicación'), where("userName", "!=", userName));
         const publicationsSnapshot = await getDocs(publicationsQuery);
@@ -52,15 +54,44 @@ function HomeScreen({ route }) {
           });
         }
         setPublications(fetchedPublications);
-      };
+    };
+
+    useEffect(() => {
       loadPublications();
     }, [userName]);
+
+    const pickImage = async () => {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    
+      if (result && !result.cancelled && result.assets.length > 0) {
+        console.log("Image URI:", result.assets[0].uri);
+        setImageUri(result.assets[0].uri);
+      } else {
+        console.log("Image selection cancelled or failed.");
+      }
+    };
   
     const handleGuardarPublicacion = async () => {
+      setUploading(true);
       try {
         const currentDate = new Date();
         const timestamp = currentDate.toISOString();
         const db = getFirestore();
+        
+        let imageUrl = '';
+        if (imageUri) {
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          const storageRef = ref(getStorage(), `images/${Date.now()}_${userName}`);
+          await uploadBytes(storageRef, blob);
+          imageUrl = await getDownloadURL(storageRef);
+        }
+    
         const publicationRef = await addDoc(collection(db, 'Publicación'), {
           product,
           price,
@@ -68,16 +99,32 @@ function HomeScreen({ route }) {
           category,
           availability,
           userName,
+          imageUrl, // agega url la imagen a los datos de la publicación
           timestamp
         });
+    
         console.log('Publication saved with ID: ', publicationRef.id);
         setModalVisible(false);
+        setImageUri(null);
+        setUploading(false);
         loadPublications();
       } catch (error) {
         console.error('Error saving publication: ', error);
         Alert.alert('Error', 'Error saving publication.');
+        setUploading(false);
       }
     };
+       
+    const handleOpenModal = () => {
+      setProducto('');
+      setPrecio('');
+      setDescripcion('');
+      setCategory('');
+      setAvailability('');
+      setImageUri(null);
+      setModalVisible(true);
+    };
+
     const formatDate = (timestamp) => {
       const date = new Date(timestamp);
       return date.toLocaleDateString();
@@ -93,18 +140,21 @@ function HomeScreen({ route }) {
         <Text style={styles.publicationDetail}>Description: {item.description}</Text>
         <Text style={styles.publicationDetail}>Category: {item.category}</Text>
         <Text style={styles.publicationDetail}>Availability: {item.availability}</Text>
+        {item.imageUrl && (
+          <Image source={{ uri: item.imageUrl }} style={{ width: 100, height: 100 }} />
+        )}
       </View>
     );
     return (
       <View style={styles.container}>
-        <Text>{`Welcomez ${userName}!`}</Text>
+        <Text>{`Hola ${userName}!`}</Text>
         <TouchableOpacity
           style={styles.buttonNewP}
-          onPress={() => setModalVisible(true)}
+          onPress={handleOpenModal}
         >
           <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>New Publication</Text>
           <AntDesign name="plus" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+         </TouchableOpacity>
         {/* Modal for Product Form */}
         <Modal
           animationType="slide"
@@ -163,14 +213,27 @@ function HomeScreen({ route }) {
                   placeholderTextColor={'#9586A8'}
                   style={styles.input}
                 />
+                <TouchableOpacity onPress={pickImage} style={[styles.button, { backgroundColor: '#2D0C57' }]}>
+                  <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>Select Image</Text>
+                </TouchableOpacity>
+                {imageUri && (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={{ width: 100, height: 100, marginTop: 10 }}
+                  />
+                )}
                 <TouchableOpacity onPress={handleGuardarPublicacion} style={[styles.button, { backgroundColor: '#2D0C57' }]}>
-                  <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>SAVE</Text>
+                  {uploading ? (
+                    <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>Uploading...</Text>
+                  ) : (
+                    <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>SAVE</Text>
+                  )}
                 </TouchableOpacity>
               </ScrollView>
             </View>
           </KeyboardAvoidingView>
         </Modal>
-  
+        
         {/* Publications List */}
         <Text style={styles.header}>Publications from other users:</Text>
         <FlatList
@@ -213,6 +276,6 @@ function HomeScreen({ route }) {
         </Modal>
       </View>
     );
-  }
+}
 
 export default HomeScreen;
