@@ -81,8 +81,9 @@ export const styles = StyleSheet.create({
       alignItems: 'center',
     },
     buttonNewP:{
-      width: 200,
-      height: 40,
+      marginTop:25,
+      width: 150,
+      height: 50,
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
@@ -106,7 +107,7 @@ export const styles = StyleSheet.create({
       paddingHorizontal: 5,
     },
     headerCell: {
-      width: 120, // Ajusta este valor según sea necesario
+      width: 120, 
       fontWeight: 'bold',
       textAlign: 'center',
     },
@@ -118,7 +119,7 @@ export const styles = StyleSheet.create({
       paddingHorizontal: 5,
     },
     cell: {
-      width: 120, // Ajusta este valor según sea necesario
+      width: 120, 
       textAlign: 'center',
     },
     publicationContainer: {
@@ -135,10 +136,22 @@ export const styles = StyleSheet.create({
       marginBottom: 10,
     },
     publicationDetail: {
-      fontSize: 14,
+      fontSize: 15,
       marginBottom: 5,
     },
     publicationsList: {
       paddingHorizontal: 10,
     },
+    inputSelect: {
+      width: '98%',
+      padding: 0,
+      marginVertical: 4,
+      borderColor: '#9586A8',
+      borderWidth: 1,
+      borderRadius: 5,
+      backgroundColor: '#ffffff90',
+      borderColor: '#fff',
+      borderWidth: 1,
+      color: '#9586A8'
+    }
   });

@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Text, StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Button, Alert, FlatList, KeyboardAvoidingView, Platform} from 'react-native';
+import { Image, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, FlatList, KeyboardAvoidingView, Platform} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import { Picker } from '@react-native-picker/picker';
 import { styles } from '../styles';
 import { Modal } from 'react-native';
 import { AntDesign} from '@expo/vector-icons';
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../firebase-config';
-import { firebase } from '../firebase-config';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, query, where, getDocs,  doc, getDoc, collection, addDoc, serverTimestamp, deleteDoc, updateDoc} from 'firebase/firestore';
-import db from '../firebase-config';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getFirestore, query, where, getDocs, collection, addDoc} from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 
 function HomeScreen({ route }) {
@@ -21,7 +15,8 @@ function HomeScreen({ route }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [userModalVisible, setUserModalVisible] = useState(false);
     const [publications, setPublications] = useState([]);
-    
+    const [selectedCategory, setSelectedCategory] = useState('')
+
     const [product, setProducto] = useState('');
     const [price, setPrecio] = useState('');
     const [description, setDescripcion] = useState('');
@@ -30,32 +25,37 @@ function HomeScreen({ route }) {
 
     const [imageUri, setImageUri] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const categories = ['Electronics', 'Clothing', 'Food', 'Books', 'Furniture','Stationery'];
   
     const loadPublications = async () => {
-        const db = getFirestore();
-        const publicationsQuery = query(collection(db, 'Publicación'), where("userName", "!=", userName));
-        const publicationsSnapshot = await getDocs(publicationsQuery);
-        const fetchedPublications = [];
+      const db = getFirestore();
+      let publicationsQuery = query(collection(db, 'Publicación'), where("userName", "!=", userName));
     
-        for (const doc of publicationsSnapshot.docs) {
-          const publicationData = doc.data();
-          const userQuery = query(collection(db, 'Alumnos'), where('name', '==', publicationData.userName));
-          const userSnapshot = await getDocs(userQuery);
-          let division = "";
-          userSnapshot.forEach(userDoc => {
-            const userData = userDoc.data();
-            division = userData.division;
-          });
+      if (selectedCategory) {
+        publicationsQuery = query(publicationsQuery, where("category", "==", selectedCategory));
+      }
     
-          fetchedPublications.push({ 
-            id: doc.id, 
-            ...publicationData,
-            division: division,
-          });
-        }
-        setPublications(fetchedPublications);
+      const publicationsSnapshot = await getDocs(publicationsQuery);
+      const fetchedPublications = [];
+    
+      for (const doc of publicationsSnapshot.docs) {
+        const publicationData = doc.data();
+        const userQuery = query(collection(db, 'Alumnos'), where('name', '==', publicationData.userName));
+        const userSnapshot = await getDocs(userQuery);
+        let division = "";
+        userSnapshot.forEach(userDoc => {
+          const userData = userDoc.data();
+          division = userData.division;
+        });
+    
+        fetchedPublications.push({ 
+          id: doc.id, 
+          ...publicationData,
+          division: division,
+        });
+      }
+      setPublications(fetchedPublications);
     };
-
     useEffect(() => {
       loadPublications();
     }, [userName]);
@@ -135,26 +135,43 @@ function HomeScreen({ route }) {
         <Text style={styles.publicationHeader}>
           {item.userName} - {item.division} - {formatDate(item.timestamp)}
         </Text>
-        <Text style={styles.publicationDetail}>Product: {item.product}</Text>
-        <Text style={styles.publicationDetail}>Price: {item.price}</Text>
+        <Text style={styles.publicationDetail}>{item.product}</Text>
+        <Text style={styles.publicationDetail}>${item.price}</Text>
         <Text style={styles.publicationDetail}>Description: {item.description}</Text>
         <Text style={styles.publicationDetail}>Category: {item.category}</Text>
         <Text style={styles.publicationDetail}>Availability: {item.availability}</Text>
         {item.imageUrl && (
-          <Image source={{ uri: item.imageUrl }} style={{ width: 100, height: 100 }} />
+          <Image source={{ uri: item.imageUrl }} style={{ width: 300, height: 300, borderRadius:10}} />
         )}
       </View>
     );
     return (
       <View style={styles.container}>
         <Text>{`Hola ${userName}!`}</Text>
-        <TouchableOpacity
-          style={styles.buttonNewP}
-          onPress={handleOpenModal}
-        >
-          <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>New Publication</Text>
-          <AntDesign name="plus" size={20} color="#FFFFFF" />
-         </TouchableOpacity>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+
+          <TouchableOpacity style={styles.buttonNewP} onPress={handleOpenModal}>
+            <Text style={{ fontSize: 17, fontWeight: '200', color: 'white' }}>New Publication</Text>
+            <AntDesign name="plus" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          <View style={styles.buttonNewP}>
+            <Picker
+              selectedValue={selectedCategory}
+              style={{ height: 50, width: 100, color: 'white' }}
+              onValueChange={(itemValue) => {
+                setSelectedCategory(itemValue);
+                loadPublications(itemValue);
+              }}
+            >
+              <Picker.Item label="All" value="" />
+              {categories.map((category, index) => (
+                <Picker.Item key={index} label={category} value={category} />
+              ))}
+            </Picker>
+          </View>
+        </View>
+        
         {/* Modal for Product Form */}
         <Modal
           animationType="slide"
@@ -199,13 +216,16 @@ function HomeScreen({ route }) {
                   style={[styles.input, { height: 100 }]}
                   multiline
                 />
-                <TextInput
-                  value={category}
-                  onChangeText={setCategory}
-                  placeholder="Category"
-                  placeholderTextColor={'#9586A8'}
-                  style={styles.input}
-                />
+                <View style={styles.inputSelect}>
+                  <Picker
+                    selectedValue={category}
+                    onValueChange={(itemValue, itemIndex) => setCategory(itemValue)}
+                  >
+                    {categories.map((category, index) => (
+                      <Picker.Item key={index} label={category} value={category} />
+                    ))}
+                  </Picker>
+                </View>
                 <TextInput
                   value={availability}
                   onChangeText={setAvailability}
@@ -235,7 +255,6 @@ function HomeScreen({ route }) {
         </Modal>
         
         {/* Publications List */}
-        <Text style={styles.header}>Publications from other users:</Text>
         <FlatList
           data={publications}
           renderItem={renderItem}

@@ -1,19 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Text, StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Button, Alert, FlatList, KeyboardAvoidingView, Platform} from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Text, View, ScrollView, TouchableOpacity, TextInput, Alert, FlatList, KeyboardAvoidingView, Platform} from 'react-native';
 import { styles } from '../styles';
 import { Modal } from 'react-native';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
+import { getFirestore, query, where, getDocs,  doc, collection, deleteDoc, updateDoc} from 'firebase/firestore';
+import { Picker } from '@react-native-picker/picker';
 
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../firebase-config';
-import { getFirestore, query, where, getDocs,  doc, getDoc, collection, addDoc, serverTimestamp, deleteDoc, updateDoc} from 'firebase/firestore';
-import db from '../firebase-config';
-
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
 // OWN PUBLICATIONS SCREEN -------------------------------------------------------------------------------------------------------
 function OwnPublicationsScreen({ route }) {
     const { userName } = route.params;
@@ -27,6 +19,8 @@ function OwnPublicationsScreen({ route }) {
     const [editedDescription, setEditedDescription] = useState('');
     const [editedCategory, setEditedCategory] = useState('');
     const [editedAvailability, setAvailability] = useState('');
+    const categories = ['Electronics', 'Clothing', 'Food', 'Books', 'Furniture', 'Stationery'];
+    const [selectedCategory, setSelectedCategory] = useState(''); 
   
     useEffect(() => {
       const loadPublications = async () => {
@@ -49,7 +43,8 @@ function OwnPublicationsScreen({ route }) {
       setEditedPrice(item.price);
       setEditedDescription(item.description);
       setEditedCategory(item.category);
-      setAvailability(item.availability);
+      setSelectedCategory(item.category);
+      setAvailability(item.availability)
       setEditModalVisible(true);
     };
   
@@ -61,7 +56,7 @@ function OwnPublicationsScreen({ route }) {
           product: editedProduct,
           price: editedPrice,
           description: editedDescription,
-          category: editedCategory,
+          category: selectedCategory,
           availability: editedAvailability
         });
         setEditModalVisible(false);
@@ -194,13 +189,17 @@ function OwnPublicationsScreen({ route }) {
                   style={[styles.input, { height: 100 }]}
                   multiline
                 />
-                <TextInput
-                  value={editedCategory}
-                  onChangeText={setEditedCategory}
-                  placeholder="Category"
-                  placeholderTextColor={'#9586A8'}
-                  style={styles.input}
-                />
+                <View>
+                  <Text>Select a category:</Text>
+                  <Picker
+                    selectedValue={selectedCategory}
+                    onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+                  >
+                    {categories.map((category, index) => (
+                      <Picker.Item key={index} label={category} value={category} />
+                    ))}
+                  </Picker>
+                </View>
                 <TextInput
                   value={editedAvailability}
                   onChangeText={setAvailability}

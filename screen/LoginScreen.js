@@ -1,18 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Image, Text, StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Button, Alert, FlatList, KeyboardAvoidingView, Platform} from 'react-native';
+import React from 'react';
+import { Image, Text, StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Alert} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { styles } from '../styles';
-import { Modal } from 'react-native';
-import { AntDesign, Ionicons } from '@expo/vector-icons';
 
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../firebase-config';
-import { getFirestore, query, where, getDocs,  doc, getDoc, collection, addDoc, serverTimestamp, deleteDoc, updateDoc} from 'firebase/firestore';
-import db from '../firebase-config';
-
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getFirestore, doc, getDoc} from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 
 const uri = 'https://i.pinimg.com/originals/8e/77/1a/8e771af40d04dc1577d89ab7d79bccb3.jpg'
@@ -114,6 +108,5 @@ function LoginScreen(){
       </View>
     );
   }
-
 
 export default LoginScreen;
