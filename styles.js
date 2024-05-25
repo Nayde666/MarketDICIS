@@ -153,5 +153,17 @@ export const styles = StyleSheet.create({
       borderColor: '#fff',
       borderWidth: 1,
       color: '#9586A8'
-    }
+    },
+    inputbarra: {
+      width: 270,
+      height: 40,
+      borderColor: '#fff',
+      borderWidth: 2,
+      borderRadius: 10,
+      padding: 10,
+      marginVertical: 10,
+      backgroundColor: '#ffffff90',
+      marginRight: 60
+
+    },
   });

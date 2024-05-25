@@ -25,7 +25,7 @@ function OwnPublicationsScreen({ route }) {
     useEffect(() => {
       const loadPublications = async () => {
         const db = getFirestore();
-        const q = query(collection(db, 'Publicación'), where("userName", "==", userName));
+        const q = query(collection(db, 'Publicacion'), where("userName", "==", userName));
         const querySnapshot = await getDocs(q);
         const fetchedPublications = [];
         querySnapshot.forEach((doc) => {
@@ -74,7 +74,7 @@ function OwnPublicationsScreen({ route }) {
     const handleDeleteConfirm = async () => {
       try {
         const db = getFirestore();
-        const docRef = doc(db, 'Publicación', selectedItem.id);
+        const docRef = doc(db, 'Publicacion', selectedItem.id);
         await deleteDoc(docRef);
         setPublications(publications.filter(pub => pub.id !== selectedItem.id));
         setDeleteModalVisible(false);
